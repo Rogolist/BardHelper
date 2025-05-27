@@ -3,7 +3,7 @@ local api = require("api")
 local bard_helper = {
   name = "Bard Helper",
   version = "0.2",
-  author = "Kotatsu & Psejik",
+  author = "Kotatsu",
   desc = "Shows songs time remaining"
 }
 
@@ -26,6 +26,7 @@ local bard_helper = {
 
 local settings = {}
 local Canvas
+local delta_coord = 50
 
 --[[
 local function SaveSettings(hold)
@@ -39,8 +40,10 @@ end
 local songsTimeRemains = {
   {
     title="Quickstep",
+	songDuration = 15,
+	--if settings.HoldTheNote then songDuration = 30 else songDuration = 15 end
     buffId=803,
-    delta_coord=0,
+    --delta_coord=0,
     timeUsed=0,
     buffLostTime=0,
     icon=nil,
@@ -48,8 +51,9 @@ local songsTimeRemains = {
   },
   {
     title="Bloody Chantey",
+	songDuration = 15,
     buffId=850,
-    delta_coord=50,
+    --delta_coord=50,
     timeUsed=0,
     buffLostTime=0,
     icon=nil,
@@ -57,8 +61,9 @@ local songsTimeRemains = {
   },
   {
     title="Bulwark Ballad",
+	songDuration = 15,
     buffId=1000,
-    delta_coord=100,
+    --delta_coord=100,
     timeUsed=0,
     buffLostTime=0,
     icon=nil,
@@ -66,15 +71,25 @@ local songsTimeRemains = {
   },
   {
     title="Ode to Recovery",
-    buffId=834,
-    delta_coord=150,
+	songDuration = 15,
+    buffId=834,	-- Ode to Recovery (Rank 2)
+    --delta_coord=150,
     timeUsed=0,
     buffLostTime=0,
     icon=nil,
     label=nil
-  }
+  },
+  {
+    title="Alarm Call",
+	songDuration = 9,
+    buffId=2362,
+    --delta_coord=150,
+    timeUsed=0,
+    buffLostTime=0,
+    icon=nil,
+    label=nil
+  },
 }
-
 
 -- вызывается с уже измененной длительностью
 local function UpdateSongIcon(song, timeRemains)
@@ -115,19 +130,15 @@ end
 -- отдельная функция чтобы переключать длительность песен от значения в настройках
 local function getSongDuration()
   if settings.HoldTheNote then
-    return 30
+    return 15
   end
 
-  return 15
+  return 0
 end
 
 
 -- анализ сообщения боевого чата
 local function updateSongTimeUsed(casterName, skillName)
-
-
-
-
 
 	local playerName = api.Unit:GetUnitNameById(api.Unit:GetUnitId("player"))
 
@@ -145,51 +156,67 @@ local function updateSongTimeUsed(casterName, skillName)
 			song.buffLostTime = 0
 			song.icon:Show(true)
 			song.label:Show(true)
+			
+			local duration = song.songDuration + getSongDuration()
 
-			UpdateSongIcon(song, getSongDuration())
+			--if settings.HoldTheNote then duration = song.songDuration + 15 else duration = song.songDuration end
+
+			--UpdateSongIcon(song, timeRemains)
+			UpdateSongIcon(song, duration)
+			
+		elseif song.title == skillName then
+			song.timeUsed = currentTime
+			song.buffLostTime = 0
+			song.icon:Show(true)
+			song.label:Show(true)
+
+			UpdateSongIcon(song, song.songDuration)
+		
 		end
 	end
-  
-  
 
-  
 	-- добавить сюда как-то отметку про надевание акваланга
 	-- в логе это Acquired: [Mistral Underwarer Breathing Device]
-  
-  
 end
 
 
 local function OnUpdate()
-  local currentTime = parseTime(api.Time.GetLocalTime())
+	local currentTime = parseTime(api.Time.GetLocalTime())
 
-  for i = 1, #songsTimeRemains do
-    local song = songsTimeRemains[i]
+	for i = 1, #songsTimeRemains do
+		local song = songsTimeRemains[i]
 
-    if song.timeUsed > 0 then
-      local timeRemains = song.timeUsed + getSongDuration() - currentTime
+		if song.timeUsed > 0 then
+			--local timeRemains = song.timeUsed + getSongDuration() - currentTime
+			local timeRemains
 
-      if timeRemains > 0 then
-		-- странное обнуление длительности если
-        if checkPlayerHasBuff(song.title) then
-          song.buffLostTime = 0
-          UpdateSongIcon(song, timeRemains)
-        else
-          if song.buffLostTime == 0 then
-            song.buffLostTime = currentTime
-          elseif currentTime - song.buffLostTime > 1 then
-            song.icon:Show(false)
-            song.label:Show(false)
-            song.timeUsed = 0
-            song.buffLostTime = 0
-          end
-        end
-      else
-        song.icon:Show(false)
-        song.label:Show(false)
-      end
-    end
-  end
+			if song.buffId ==2362 then
+				timeRemains = song.timeUsed + song.songDuration - currentTime
+			else
+				timeRemains = song.timeUsed + song.songDuration + getSongDuration() - currentTime
+			end
+
+			if timeRemains > 0 then
+			-- странное обнуление длительности если
+				if checkPlayerHasBuff(song.title) then
+					song.buffLostTime = 0
+					UpdateSongIcon(song, timeRemains)
+				else
+					if song.buffLostTime == 0 then
+						song.buffLostTime = currentTime
+					elseif currentTime - song.buffLostTime > 1 then
+						song.icon:Show(false)
+						song.label:Show(false)
+						song.timeUsed = 0
+						song.buffLostTime = 0
+					end
+				end
+			else
+				song.icon:Show(false)
+				song.label:Show(false)
+			end
+		end
+	end
 end
 
 --[[
@@ -203,7 +230,9 @@ end
 ]]
 
 -- отрисовка иконок песен
-local function createSongUI(song, settings, Canvas)
+local function createSongUI(i, settings, Canvas)
+	local song = songsTimeRemains[i]
+
 	song.icon = CreateItemIconButton("SongIcon_" .. song.buffId, Canvas)
 	song.icon:Show(false)
 	--song.icon:AddAnchor("TOPLEFT", Canvas, "TOPLEFT", -20 + song.y_coord, -20)
@@ -215,12 +244,12 @@ local function createSongUI(song, settings, Canvas)
 		--debug
 		--api.Log:Info("[BH debug: Column]")
 		
-		song.icon:AddAnchor("TOPLEFT", Canvas, "TOPLEFT", 20 , 0 + song.delta_coord)
+		song.icon:AddAnchor("TOPLEFT", Canvas, "TOPLEFT", 20 , 0 + (i-1) * delta_coord)
 	else
 		--debug
 		--api.Log:Info("[BH debug: Row]")
 	
-		song.icon:AddAnchor("TOPLEFT", Canvas, "TOPLEFT", 20 + song.delta_coord, 0)
+		song.icon:AddAnchor("TOPLEFT", Canvas, "TOPLEFT", 20 + (i-1) * delta_coord, 0)
 	end
 
 	F_SLOT.ApplySlotSkin(song.icon, song.icon.back, SLOT_STYLE.BUFF)
@@ -230,9 +259,9 @@ local function createSongUI(song, settings, Canvas)
 
 	-- отрисовка таймера на песне
 	if settings.column then
-		song.label:AddAnchor("TOPLEFT", Canvas, "TOPLEFT", 40, 20 + song.delta_coord)
+		song.label:AddAnchor("TOPLEFT", Canvas, "TOPLEFT", 40, 20 + (i-1) * delta_coord)
 	else
-		song.label:AddAnchor("TOPLEFT", Canvas, "TOPLEFT", 40 + song.delta_coord, 20)
+		song.label:AddAnchor("TOPLEFT", Canvas, "TOPLEFT", 40 + (i-1) * delta_coord, 20)
 	end
 	
 	song.label.style:SetFontSize(30)
@@ -328,7 +357,8 @@ function CreateMainDisplay(settings)
 					songsTimeRemains[i].icon:Show(false)
 					songsTimeRemains[i].label:Show(false)
 				
-					createSongUI(songsTimeRemains[i], settings, Canvas)
+					--createSongUI(songsTimeRemains[i], settings, Canvas, i)
+					createSongUI(i, settings, Canvas)
 				end
 			elseif arg[5] == "!bard_row" then
 				settings.column = false
@@ -338,7 +368,7 @@ function CreateMainDisplay(settings)
 				for i = 1, #songsTimeRemains do
 					songsTimeRemains[i].icon:Show(false)
 					songsTimeRemains[i].label:Show(false)
-					createSongUI(songsTimeRemains[i], settings, Canvas)
+					createSongUI(i, settings, Canvas)
 				end
 			end
 			
@@ -347,7 +377,8 @@ function CreateMainDisplay(settings)
 	
 	
 	for i = 1, #songsTimeRemains do
-		createSongUI(songsTimeRemains[i], settings, Canvas)
+		--createSongUI(songsTimeRemains[i], settings, Canvas)
+		createSongUI(i, settings, Canvas)
 	end
 	
 
