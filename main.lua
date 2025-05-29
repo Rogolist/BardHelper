@@ -2,7 +2,7 @@ local api = require("api")
 
 local bard_helper = {
   name = "Bard Helper",
-  version = "0.2",
+  version = "0.3",
   author = "Kotatsu",
   desc = "Shows songs time remaining"
 }
@@ -80,8 +80,20 @@ local songsTimeRemains = {
     label=nil
   },
   {
+    title="Grief's Cadence",
+	songDuration = 15,
+    buffId=6830,	-- Ode to Recovery (Rank 2)
+    --delta_coord=150,
+    timeUsed=0,
+    buffLostTime=0,
+    icon=nil,
+    label=nil
+  },
+  
+
+  {
     title="Alarm Call",
-	songDuration = 9,
+	songDuration = 15, --9 if Sleep
     buffId=2362,
     --delta_coord=150,
     timeUsed=0,
@@ -89,6 +101,7 @@ local songsTimeRemains = {
     icon=nil,
     label=nil
   },
+
 }
 
 -- вызывается с уже измененной длительностью
