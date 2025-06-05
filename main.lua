@@ -2,7 +2,7 @@ local api = require("api")
 
 local bard_helper = {
   name = "Bard Helper",
-  version = "0.3",
+  version = "0.4",
   author = "Kotatsu",
   desc = "Shows songs time remaining"
 }
@@ -101,7 +101,17 @@ local songsTimeRemains = {
     icon=nil,
     label=nil
   },
-
+  
+  {
+    title="Polymorphic Resonance",
+	songDuration = 25,
+    buffId=20473, --18506, -- or 20473
+    --delta_coord=150,
+    timeUsed=0,
+    buffLostTime=0,
+    icon=nil,
+    label=nil
+  },
 }
 
 -- вызывается с уже измененной длительностью
@@ -203,7 +213,7 @@ local function OnUpdate()
 			--local timeRemains = song.timeUsed + getSongDuration() - currentTime
 			local timeRemains
 
-			if song.buffId ==2362 then
+			if song.buffId ==2362 or song.buffId ==20473 then
 				timeRemains = song.timeUsed + song.songDuration - currentTime
 			else
 				timeRemains = song.timeUsed + song.songDuration + getSongDuration() - currentTime
@@ -284,8 +294,8 @@ end
 
 function CreateMainDisplay(settings)
 
-	local canvas_x = settings.x or 100
-	local canvas_y = settings.y or 50
+	local canvas_x = settings.x or 1300
+	local canvas_y = settings.y or 200
 	
 	Canvas = api.Interface:CreateEmptyWindow("BuffAlerterCanvas", "UIParent")
 
