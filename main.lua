@@ -3,7 +3,7 @@ local api = require("api")
 local bard_helper = {
   name = "Bard Helper",
   version = "0.1",
-  author = "Kotatsu",
+  author = "Waifu",
   desc = "Shows songs time remaining"
 }
 
