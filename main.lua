@@ -94,7 +94,7 @@ local songsTimeRemains = {
   {
     title="Grief's Cadence",
 	songDuration = 15,
-    buffId=6830,	-- Ode to Recovery (Rank 2)
+    buffId=6830,
     --delta_coord=150,
     timeUsed=0,
     buffLostTime=0,
@@ -104,6 +104,11 @@ local songsTimeRemains = {
   
 
   {
+	-- arg[3] arg[5]=id arg[6]=name
+	-- arg = {1e057, "SPELL_CAST_START", "Psejik", "Psejik", 36628, "Alarm Call", "PHYSICAL", 7}
+	-- arg = {1e057, "SPELL_CAST_SUCCESS", "Psejik", "Psejik", 36628, "Alarm Call", "PHYSICAL", 7}
+	-- arg = {1e057, "SPELL_AURA_APPLIED", "Psejik", "Psejik", 21435, "Stone Alarm Call", "PHYSICAL", "BUFF", false, 9}
+	-- arg = {1e057, "SPELL_AURA_REMOVED", "Psejik", "Psejik", 21435, "Stone Alarm Call", "PHYSICAL", "BUFF", true, 9}
     title="Alarm Call",
 	songDuration = 15, --9 if Sleep
     buffId=2362,
@@ -135,7 +140,7 @@ local function UpdateSongIcon(song, timeRemains)
 end
 
 
--- какая-то непонятная пока проверка
+-- какая-то непонятная пока проверка (есть ли наложенный баф от умения перфоманса)
 --local function checkPlayerHasBuff(buffName)
 local function checkPlayerHasBuff(buffId, improvedBuffId)
     local buffCount = api.Unit:UnitBuffCount("player")
@@ -144,6 +149,9 @@ local function checkPlayerHasBuff(buffId, improvedBuffId)
         for i = 1, buffCount do
 			-- перебираем все бафы на игроке
             local buff = api.Unit:UnitBuff("player", i)
+			
+				--api.Log:Info("BuffId is " .. buff.buff_id)
+				--api.Log:Info(buff) -- buff.path buff.stack buff.id buff.timeLeft
 
             if buff and buff.buff_id then
 				--[[
@@ -153,6 +161,8 @@ local function checkPlayerHasBuff(buffId, improvedBuffId)
                   return true
                 end
 				]]
+
+				
 				if buff.buff_id == buffId or buff.buff_id == improvedBuffId then
 					return true
 				end
@@ -180,10 +190,11 @@ end
 
 -- анализ сообщения боевого чата
 --local function updateSongTimeUsed(casterName, skillName)
-local function updateSongTimeUsed(casterName, skillId)
+local function updateSongTimeUsed(casterName, skillId, skillName)
 
 	local playerName = api.Unit:GetUnitNameById(api.Unit:GetUnitId("player"))
 
+	-- отсеиваем сообщеия от других игроков
 	if casterName ~= playerName then
 		return
 	end
@@ -373,7 +384,8 @@ function CreateMainDisplay(settings)
 	-- изменение через чат: наличие пассивного таланта "Hold the Note"
 	function Canvas:OnEvent(event, ...)
 		if event == "COMBAT_MSG" then
-			updateSongTimeUsed(arg[3], arg[5])
+			-- api.Log:Info(arg) -- просмотр детальной информации по активированному скиллу
+			updateSongTimeUsed(arg[3], arg[5], arg[6]) --casterName, skillId, skillName
 		end
 
 		if event == "CHAT_MESSAGE" then
